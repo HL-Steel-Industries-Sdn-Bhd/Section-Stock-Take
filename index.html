@@ -36,10 +36,10 @@
     }
 
     h1 {
-      font-size: 1.12rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: #1a1a1a;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.4px;
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -56,6 +56,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       min-width: 0;
+      max-width: 55%;
       text-align: right;
     }
     .sk-badge.empty {
@@ -137,7 +138,7 @@
     .cs-dim-container {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       width: 100%;
     }
     .cs-dim-container select { flex: 1; min-width: 0; }
@@ -196,27 +197,26 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
     }
 
+    /* Refresh 按钮：纯文字，无图标、无转动 */
     .refresh-btn {
       flex-shrink: 0;
-      width: 34px;
-      height: 34px;
+      height: 32px;
+      padding: 0 14px;
       border: none;
-      border-radius: 9px;
+      border-radius: 8px;
       background: #007AFF;
       color: #fff;
-      font-size: 1.15rem;
-      line-height: 1;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       transition: background 0.15s;
     }
     .refresh-btn:active { background: #0056CC; }
-    .refresh-btn.spinning { animation: spin 0.7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* 表格外框（可横向滚动） */
     .history-frame {
@@ -344,11 +344,11 @@
 
     #hiddenFrame { display: none; }
 
-    @media (max-width: 350px) {
-      .form-row { flex-direction: column; gap: 12px; }
-      .cs-dim-container { gap: 4px; }
+    @media (max-width: 360px) {
       h1 { font-size: 1rem; }
-      .sk-badge { font-size: 0.66rem; padding: 4px 8px; }
+      .sk-badge { font-size: 0.66rem; padding: 4px 8px; max-width: 50%; }
+      .cs-dim-container { gap: 6px; }
+      .refresh-btn { padding: 0 12px; font-size: 0.76rem; }
     }
   </style>
 </head>
@@ -371,7 +371,9 @@
         <input type="hidden" name="action" value="submit">
         <input type="hidden" name="storekeeper" id="storekeeperInput" value="">
 
-        <div class="section-title">Basic Information</div>
+        <div class="section-title">Raw Material Info</div>
+
+        <!-- 第 1 行：Shape / Grade -->
         <div class="form-row">
           <div class="form-group">
             <label for="shape">Shape</label>
@@ -385,15 +387,25 @@
               <option value="">Please select</option>
             </select>
           </div>
+        </div>
+
+        <!-- 第 2 行：Surface / Thickness -->
+        <div class="form-row">
           <div class="form-group">
             <label for="surface">Surface</label>
             <select id="surface" name="surface" required>
               <option value="">Please select</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="thickness">Thickness</label>
+            <select id="thickness" name="thickness" required>
+              <option value="">Please select</option>
+            </select>
+          </div>
         </div>
 
-        <div class="section-title">Dimensions</div>
+        <!-- 第 3 行：C/S Dim 独占一行 -->
         <div class="form-row">
           <div class="form-group">
             <label>C/S Dim</label>
@@ -407,14 +419,9 @@
               </select>
             </div>
           </div>
-          <div class="form-group">
-            <label for="thickness">Thickness</label>
-            <select id="thickness" name="thickness" required>
-              <option value="">Please select</option>
-            </select>
-          </div>
         </div>
 
+        <!-- Stock Take Result 保持原样 -->
         <div class="section-title">Stock Take Result</div>
         <div class="form-row">
           <div class="form-group">
@@ -436,7 +443,7 @@
     <div class="card history-card">
       <div class="history-header">
         <span class="history-title" id="historyTitle">Last 7 Days Records</span>
-        <button type="button" class="refresh-btn" id="refreshBtn" title="刷新记录">⟳</button>
+        <button type="button" class="refresh-btn" id="refreshBtn" title="Refresh records">Refresh</button>
       </div>
       <div class="history-frame" id="historyFrame">
         <div class="loading">⏳ Loading…</div>
@@ -476,6 +483,7 @@
     if (storekeeper) {
       skBadge.textContent = 'Storekeeper : ' + storekeeper;
       skBadge.classList.remove('empty');
+      skBadge.title = 'Storekeeper : ' + storekeeper;
     } else {
       skBadge.textContent = 'Storekeeper : —';
       skBadge.classList.add('empty');
@@ -494,7 +502,7 @@
     let isSubmitting = false;
 
     /* ---------------------------------------------------------
-       3. 载入下拉选项
+       3. 载入下拉选项 + 首次自动刷新历史
        --------------------------------------------------------- */
     window.addEventListener('DOMContentLoaded', () => {
       loadOptions();
@@ -581,8 +589,7 @@
     let savedTableWidth = '';
 
     refreshBtn.addEventListener('click', function () {
-      refreshBtn.classList.add('spinning');
-      loadHistory().finally(() => refreshBtn.classList.remove('spinning'));
+      loadHistory();
     });
 
     async function loadHistory() {
