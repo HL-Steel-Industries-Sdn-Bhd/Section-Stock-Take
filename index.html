@@ -248,21 +248,21 @@
     /* ===== 历史记录表 ===== */
     .history-frame table {
       table-layout: fixed;
-      width: 390px;
+      width: 368px;
       border-collapse: collapse;
       font-size: 10px;
       line-height: 1.25;
     }
 
-    /* 默认列宽：DAT SHP GRD SUR CSD THK QTY LCT */
-    .history-frame col:nth-child(1) { width: 92px; }
-    .history-frame col:nth-child(2) { width: 34px; }
-    .history-frame col:nth-child(3) { width: 34px; }
-    .history-frame col:nth-child(4) { width: 34px; }
-    .history-frame col:nth-child(5) { width: 56px; }
-    .history-frame col:nth-child(6) { width: 44px; }
-    .history-frame col:nth-child(7) { width: 38px; }
-    .history-frame col:nth-child(8) { width: 58px; }
+    /* 默认列宽：DAT SHP GRD SUR CSD THK QTY LCT （合计 368px） */
+    .history-frame col:nth-child(1) { width: 44px; }   /* DAT */
+    .history-frame col:nth-child(2) { width: 34px; }   /* SHP */
+    .history-frame col:nth-child(3) { width: 44px; }   /* GRD */
+    .history-frame col:nth-child(4) { width: 34px; }   /* SUR */
+    .history-frame col:nth-child(5) { width: 92px; }   /* CSD */
+    .history-frame col:nth-child(6) { width: 44px; }   /* THK */
+    .history-frame col:nth-child(7) { width: 38px; }   /* QTY */
+    .history-frame col:nth-child(8) { width: 38px; }   /* LCT */
 
     .history-frame th {
       background: #1d4b6e;
@@ -462,7 +462,7 @@
     /* =========================================================
        ⚠️ 部署好 GAS 后，把下面这个占位符换成你的 Web App URL
        ========================================================= */
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6VWcOzEmSYxwEviogEeCsfsoQqEWRbuNCP1jwRwSyQ-NY6zARLNmg8IeBXHdAfx1m/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/PASTE_YOUR_DEPLOYMENT_ID_HERE/exec';
 
     const HISTORY_DAYS = 7;      // 当天 + 前 6 天
     const HEADERS      = ['DAT', 'SHP', 'GRD', 'SUR', 'CSD', 'THK', 'QTY', 'LCT'];
@@ -629,8 +629,10 @@
       rows.forEach(r => {
         html += '<tr>';
         for (let i = 0; i < 8; i++) {
+          let value = r[i];
+          if (i === 0) value = formatDateShort(value);   // DAT 只显示 DD/MM
           const cls = (i === 0) ? ' class="date-cell"' : '';
-          html += '<td' + cls + '>' + escapeHtml(r[i]) + '</td>';
+          html += '<td' + cls + '>' + escapeHtml(value) + '</td>';
         }
         html += '</tr>';
       });
@@ -733,6 +735,41 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+    }
+
+    /* ---------------------------------------------------------
+       时间：把 Timestamp 转成 DD/MM
+       兼容两种来源格式：
+         1) MM/DD/YYYY HH:mm:ss   （e.g. 11/11/2026 12:16:35）
+         2) YYYY-MM-DD HH:mm:ss   （e.g. 2026-11-11 12:16:35）
+       --------------------------------------------------------- */
+    function pad2(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function formatDateShort(val) {
+      if (val === null || val === undefined || val === '') return '';
+      const s = String(val).trim();
+      if (!s) return '';
+
+      // 1) YYYY-MM-DD ...
+      let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+      if (m) {
+        return pad2(m[3]) + '/' + pad2(m[2]);   // DD/MM
+      }
+
+      // 2) MM/DD/YYYY ...
+      m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+      if (m) {
+        return pad2(m[2]) + '/' + pad2(m[1]);   // DD/MM
+      }
+
+      // 3) 兜底：交给 Date 解析
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1);
+      }
+      return s;
     }
 
   })();
