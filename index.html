@@ -420,7 +420,9 @@
           </div>
           <div class="form-group">
             <label for="remarks">Location</label>
-            <input type="text" id="remarks" name="remarks" placeholder="Enter location">
+            <select id="remarks" name="remarks">
+              <option value="">Please select</option>
+            </select>
           </div>
         </div>
 
@@ -452,7 +454,7 @@
     /* =========================================================
        ⚠️ 部署好 GAS 后，把下面这个占位符换成你的 Web App URL
        ========================================================= */
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6VWcOzEmSYxwEviogEeCsfsoQqEWRbuNCP1jwRwSyQ-NY6zARLNmg8IeBXHdAfx1m/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyoSsKPjdbh7vreo9yavGtGO2fUmpc029fhUZyGtYbpLHeYVncKlGmoV9e5l2e5-k2T/exec';
 
     const HISTORY_DAYS = 7;      // 当天 + 前 6 天
     const HEADERS      = ['DAT', 'SHP', 'GRD', 'SUR', 'CSD', 'THK', 'QTY', 'LCT'];
@@ -524,6 +526,7 @@
       fill('grade',     options.grades);
       fill('surface',   options.surfaces);
       fill('thickness', options.thicknesses);
+      fill('remarks',   options.locations);   // Location 下拉框
 
       const cs1 = document.getElementById('csDim1');
       const cs2 = document.getElementById('csDim2');
@@ -589,7 +592,7 @@
       userHasCustomized = false;
       Object.keys(savedColWidths).forEach(k => delete savedColWidths[k]);
       savedTableWidth = '';
-      
+
       // 重新请求数据并渲染（渲染时会因为 userHasCustomized = false，自动恢复初始列宽）
       loadHistory();
     });
@@ -665,12 +668,12 @@
     function applyResponsiveWidths(force = false) {
       const table = historyFrame.querySelector('table');
       if (!table) return;
-      
+
       // 如果不是强制执行（例如只是刷新数据），且用户已经自定义过，则不覆盖
       if (!force && userHasCustomized) return;
 
       const cols = table.querySelectorAll('colgroup col');
-      
+
       // 判断方向
       const isPortrait = window.innerHeight > window.innerWidth;
       const widths = isPortrait ? WIDTHS_PORTRAIT : WIDTHS_LANDSCAPE;
@@ -695,10 +698,10 @@
 
     window.addEventListener('resize', () => {
       const currentWidth = window.innerWidth;
-      
+
       // 如果宽度变化小于 20px，认为是软键盘弹起导致的高度变化，忽略处理
       if (Math.abs(currentWidth - lastWidth) < 20) return;
-      
+
       lastWidth = currentWidth;
 
       // 给一点延迟让浏览器完成布局重排
@@ -766,7 +769,7 @@
           // 记录用户的拖拽行为并保存
           savedColWidths[colIndex] = newWidth + 'px';
           savedTableWidth = newTableW + 'px';
-          userHasCustomized = true; 
+          userHasCustomized = true;
         };
 
         const onEnd = () => {
